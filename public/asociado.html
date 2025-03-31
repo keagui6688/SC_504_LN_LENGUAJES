@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Asociados</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome para íconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-users"></i> Gestión de Asociados</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <h1 class="text-center">Gestión de Asociados</h1>
+        <div class="mb-3 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssociateModal">
+                <i class="fas fa-plus"></i> Agregar Asociado
+            </button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID Asociado</th>
+                        <th>ID Beneficiario</th>
+                        <th>ID Estado Civil</th>
+                        <th>ID Dirección</th>
+                        <th>ID Estado</th>
+                        <th>Cédula</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Correo</th>
+                        <th>Fecha</th>
+                        <th>Teléfono</th>
+                        <th>Creado Por</th>
+                        <th>Fecha de Creación</th>
+                        <th>Última Modificación Por</th>
+                        <th>Última Fecha Modificación</th>
+                        <th>Acción</th>
+                        <th>Opciones</th>
+                    </tr>
+                </thead>
+                <tbody id="associateTableBody">
+                    <!-- Los datos se cargarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para Agregar/Editar Asociado -->
+    <div class="modal fade" id="addAssociateModal" tabindex="-1" aria-labelledby="addAssociateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAssociateModalLabel">Formulario Asociado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="associateForm">
+                        <!-- Oculto para edición -->
+                        <input type="hidden" id="associateId">
+
+                        <!-- Campos ingresados manualmente -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="associateBeneficiary" class="form-label">ID Beneficiario</label>
+                                <input type="number" class="form-control" id="associateBeneficiary" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="associateCivilStatus" class="form-label">ID Estado Civil</label>
+                                <input type="number" class="form-control" id="associateCivilStatus" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="associateAddress" class="form-label">ID Dirección</label>
+                                <input type="number" class="form-control" id="associateAddress" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="associateState" class="form-label">ID Estado</label>
+                                <input type="number" class="form-control" id="associateState" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="associateCedula" class="form-label">Cédula</label>
+                                <input type="text" class="form-control" id="associateCedula" required maxlength="20">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="associateName" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="associateName" required maxlength="100">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="associateLastName" class="form-label">Apellido</label>
+                                <input type="text" class="form-control" id="associateLastName" required maxlength="100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="associateEmail" class="form-label">Correo Electrónico</label>
+                                <input type="email" class="form-control" id="associateEmail" required maxlength="100">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="associatePhone" class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="associatePhone" required maxlength="20">
+                            </div>
+                        </div>
+
+                        <!-- Campos generados automáticamente (Solo visualización) -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Creado Por</label>
+                                <input type="text" class="form-control" id="associateCreatedBy" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fecha de Creación</label>
+                                <input type="text" class="form-control" id="associateCreationDate" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Última Modificación Por</label>
+                                <input type="text" class="form-control" id="associateLastUpdateBy" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Última Fecha Modificación</label>
+                                <input type="text" class="form-control" id="associateLastUpdateDate" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Botón para guardar -->
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- Archivo asociados.js -->
+    <script src="asociados.js"></script>
+</body>
+</html>
