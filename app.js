@@ -13,8 +13,8 @@ app.use(express.static('public')); // Servir archivos estáticos desde la carpet
 
 // Configuración de la base de datos
 const dbConfig = {
-    user: 'fidu',           // Cambia por tu usuario de la BD
-    password: 'admin1',     // Cambia por tu contraseña de la BD
+    user: 'fidudata',           // Cambia por tu usuario de la BD
+    password: '12345',     // Cambia por tu contraseña de la BD
     connectString: 'localhost:1521/XE' // Cambia según tu instancia de Oracle
 };
 
@@ -119,45 +119,184 @@ app.post('/beneficiarios', async (req, res) => {
         res.status(500).send('Error al agregar el beneficiario.');
     }
 });
-
-// **Rutas para Asociados**
 app.get('/asociados', async (req, res) => {
-    const query = 'SELECT * FROM FIDE_ASOCIADO_TB';
+    let connection;
     try {
-        const result = await executeQuery(query);
-        res.json(result.rows);
+      connection = await oracledb.getConnection(dbConfig);
+  
+      // Consulta para obtener los datos
+      const query = `
+        SELECT id_beneficiario_fk, id_estado_civil_fk, id_direccion_fk, id_estado_fk,
+               v_cedula, v_nombre, v_apellido, v_correo, v_telefono
+        FROM FIDE_ASOCIADO_TB
+      `;
+      const result = await connection.execute(query);
+  
+      // Verifica los datos obtenidos
+      console.log('Datos obtenidos:', result.rows);
+  
+      res.json(result.rows);
     } catch (err) {
-        console.error('Error al obtener los asociados:', err);
-        res.status(500).send('Error al obtener los asociados.');
-    }
-});
-
-app.post('/asociados', async (req, res) => {
-    const { id_beneficiario, id_estado_civil, id_direccion, id_estado, v_cedula, v_nombre, v_apellido, v_correo, v_telefono } = req.body;
-
-    const beneficiaryCheckQuery = 'SELECT 1 FROM FIDE_BENEFICIARIOS_TB WHERE ID_BENEFICIARIO = :id_beneficiario';
-    try {
-        const beneficiaryCheck = await executeQuery(beneficiaryCheckQuery, { id_beneficiario });
-        if (beneficiaryCheck.rows.length === 0) {
-            return res.status(400).send('El ID_BENEFICIARIO no existe en la tabla FIDE_BENEFICIARIOS_TB.');
+      console.error('Error de conexión o consulta:', err);
+      res.status(500).send('Error al obtener los asociados.');
+    } finally {
+      // Asegúrate de cerrar la conexión al final
+      if (connection) {
+        try {
+          await connection.close();
+        } catch (closeErr) {
+          console.error('Error al cerrar la conexión:', closeErr);
         }
-    } catch (err) {
-        console.error('Error al verificar el ID_BENEFICIARIO:', err);
-        return res.status(500).send('Error interno al verificar el ID_BENEFICIARIO.');
+      }
     }
-
-    const insertQuery = `
-        INSERT INTO FIDE_ASOCIADO_TB (ID_BENEFICIARIO, ID_ESTADO_CIVIL, ID_DIRECCION, ID_ESTADO, V_CEDULA, V_NOMBRE, V_APELLIDO, V_CORREO, V_TELEFONO)
-        VALUES (:id_beneficiario, :id_estado_civil, :id_direccion, :id_estado, :v_cedula, :v_nombre, :v_apellido, :v_correo, :v_telefono)
-    `;
+  });
+  
+  app.post('/asociados', async (req, res) => {
+    const { id_beneficiario_fk, id_estado_civil_fk, id_direccion_fk, id_estado_fk, v_cedula, v_nombre, v_apellido, v_correo, v_telefono } = req.body;
+  
+    if (!v_cedula || !v_nombre || !v_apellido || !v_correo || !v_telefono) {
+      return res.status(400).send('Todos los campos son requeridos.');
+    }
+  
     try {
-        const result = await executeQuery(insertQuery, { id_beneficiario, id_estado_civil, id_direccion, id_estado, v_cedula, v_nombre, v_apellido, v_correo, v_telefono }, { autoCommit: true });
-        res.status(201).json({ mensaje: 'Asociado agregado correctamente.', result });
+      const connection = await oracledb.getConnection(dbConfig);
+  
+      // Llamamos al procedimiento almacenado
+      app.post('/asociados', async (req, res) => {
+        const {
+            id_beneficiario_fk,
+            id_estado_civil_fk,
+            id_direccion_fk,
+            id_estado_fk,
+            v_cedula,
+            v_nombre,
+            v_apellido,
+            v_correo,
+            v_telefono
+        } = req.body;
+    
+        const plsql = `
+            BEGIN
+                FIDE_UTILS_PKG.FIDE_INSERTAR_FIDE_ASOCIADO_TB_SP(
+                    :idBeneficiario,
+                    :idEstadoCivil,
+                    :idDireccion,
+                    :idEstado,
+                    :cedula,
+                    :nombre,
+                    :apellido,
+                    :correo,
+                    :telefono
+                );
+            END;
+        `;
+    
+        let connection;
+    
+        try {
+            connection = await oracledb.getConnection(dbConfig);
+    
+            await connection.execute(plsql, {
+                idBeneficiario: id_beneficiario_fk,
+                idEstadoCivil: id_estado_civil_fk,
+                idDireccion: id_direccion_fk,
+                idEstado: id_estado_fk,
+                cedula: v_cedula,
+                nombre: v_nombre,
+                apellido: v_apellido,
+                correo: v_correo,
+                telefono: v_telefono
+            });
+    
+            res.status(200).send('Asociado insertado correctamente');
+        } catch (err) {
+            console.error('Error al ejecutar el procedimiento almacenado:', err);
+            res.status(500).send('Error al insertar asociado');
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (closeErr) {
+                    console.error('Error al cerrar la conexión:', closeErr);
+                }
+            }
+        }
+    });
+      // Confirmamos la transacción
+      await connection.commit();
+      await connection.close();
+  
+      res.status(201).send('Asociado creado exitosamente.');
     } catch (err) {
-        console.error('Error al agregar el asociado:', err);
-        res.status(500).send('Error al agregar el asociado.');
+      console.error('Error al insertar el asociado:', err);
+      res.status(500).send('Error al insertar el asociado.');
     }
-});
+  });
+  
+  app.put('/asociados/:id', async (req, res) => {
+    const { id } = req.params; // ID del asociado
+    const { id_estado_civil_fk, id_direccion_fk, id_estado_fk, v_cedula, v_nombre, v_apellido, v_correo, v_telefono } = req.body;
+  
+    if (!v_cedula || !v_nombre || !v_apellido || !v_correo || !v_telefono) {
+      return res.status(400).send('Todos los campos son requeridos.');
+    }
+  
+    try {
+      const connection = await oracledb.getConnection(dbConfig);
+  
+      // Actualizar el asociado en la tabla FIDE_ASOCIADO_TB
+      await connection.execute(
+        `BEGIN
+          FIDE_ASOCIADO_TB_ACTUALIZAR_SP(
+            p_id_asociado => :id,
+            p_id_estado_civil_fk => :id_estado_civil_fk,
+            p_id_direccion_fk => :id_direccion_fk,
+            p_id_estado_fk => :id_estado_fk,
+            p_v_cedula => :v_cedula,
+            p_v_nombre => :v_nombre,
+            p_v_apellido => :v_apellido,
+            p_v_correo => :v_correo,
+            p_v_telefono => :v_telefono
+          );
+         END;`,
+        { id, id_estado_civil_fk, id_direccion_fk, id_estado_fk, v_cedula, v_nombre, v_apellido, v_correo, v_telefono }
+      );
+  
+      await connection.commit();
+      await connection.close();
+  
+      res.send('Asociado actualizado correctamente.');
+    } catch (err) {
+      console.error('Error al actualizar el asociado:', err);
+      res.status(500).send('Error al actualizar el asociado.');
+    }
+  });
+  
+  app.delete('/asociados/:id', async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const connection = await oracledb.getConnection(dbConfig);
+  
+      // Llamamos al procedimiento almacenado para eliminar
+      await connection.execute(
+        `BEGIN
+          FIDE_ASOCIADO_TB_ELIMINAR_SP(p_id_asociado => :id);
+         END;`,
+        { id }
+      );
+  
+      await connection.commit();
+      await connection.close();
+  
+      res.send('Asociado eliminado correctamente.');
+    } catch (err) {
+      console.error('Error al eliminar el asociado:', err);
+      res.status(500).send('Error al eliminar el asociado.');
+    }
+  });
+
+
 
 // **Servidor escuchando**
 app.listen(PORT, () => {
